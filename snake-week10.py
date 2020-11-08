@@ -23,7 +23,6 @@ head.goto(0, 0)
 
 # Step 3: Code the snake head to move up and down
 def move_up():
-    print(head.direction)
     print("snake is moving up")
 
 def move_down():
