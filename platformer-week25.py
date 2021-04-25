@@ -1,5 +1,6 @@
 import pygame
 import random
+from os import path
 
 WIDTH = 800
 HEIGHT = 600
@@ -14,6 +15,20 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+BGD_COLOR = (236, 236, 236)
+
+# Initialize pygame and create window
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Platformer")
+clock = pygame.time.Clock()
+
+img_dir = path.join(path.dirname(__file__), 'img')
+sound_dir = path.join(path.dirname(__file__), 'sound')
+
+player_img = pygame.image.load(path.join(img_dir, 'player.png')).convert()
+platform_img = pygame.image.load(path.join(img_dir, 'platform.png')).convert()
 
 # Game loop
 # Event processing
@@ -24,8 +39,10 @@ BLUE = (0, 0, 255)
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([PLAYER_WIDTH, PLAYER_HEIGHT])
-        self.image.fill(RED)
+#        self.image = pygame.Surface([PLAYER_WIDTH, PLAYER_HEIGHT])
+#        self.image.fill(RED)
+        self.image = pygame.transform.scale(player_img, (PLAYER_WIDTH, PLAYER_HEIGHT))
+        self.image.set_colorkey(BGD_COLOR)
         self.rect = self.image.get_rect()
         self.rect.x = (WIDTH - PLAYER_WIDTH )/ 2
         self.rect.y = HEIGHT - PLAYER_HEIGHT
@@ -88,13 +105,14 @@ class Player(pygame.sprite.Sprite):
 class Platform(pygame.sprite.Sprite):
     def __init__(self, platform_def):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([platform_def[0], platform_def[1]])
-        self.image.fill(GREEN)
+#        self.image = pygame.Surface([platform_def[0], platform_def[1]])
+#        self.image.fill(GREEN)
+        self.image = pygame.transform.scale(platform_img, (platform_def[0], platform_def[1]))
         self.rect = self.image.get_rect()
         self.rect.x = platform_def[2]
         self.rect.y = platform_def[3]
 
-# [height, width, pos_x, pos_y]
+# [width, height, pos_x, pos_y]
 levels = [
     [210, 70, 500, 500],
     [100, 70, 350, 400],
@@ -110,12 +128,7 @@ active_sprite = pygame.sprite.Group()
 player = Player()
 active_sprite.add(player)
 
-# Initialize pygame and create window
-pygame.init()
-pygame.mixer.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Platformer")
-clock = pygame.time.Clock()
+
 
 running = True
 while running:
