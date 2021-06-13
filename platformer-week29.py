@@ -47,10 +47,11 @@ class Player(pygame.sprite.Sprite):
         self.change_y = 0
         self.sprite_sheet = sprite_sheet
         self.load_images()
-        self.walking = False
         self.dir = 'r'
         self.current_frame = 0
         self.last_updated = 0
+        self.walking = False
+        self.life = 3
 
     def load_images(self):
         self.image_running_l = []
@@ -58,14 +59,14 @@ class Player(pygame.sprite.Sprite):
         self.image_standing_l = []
         self.image_standing_r = []
 
-        for x in range(0, 68*6, 68):
+        for x in range(0, 476, 68):
             image = pygame.transform.scale(self.sprite_sheet.get_image(x, 0, 68, 100), (PLAYER_WIDTH, PLAYER_HEIGHT))
             image.set_colorkey(IMG_BGD_COLOR)
             self.image_running_r.append(image)
             image = pygame.transform.flip(image, True, False)
             self.image_running_l.append(image)
 
-        for x in range(0, 68*3, 68):
+        for x in range(0, 204, 68):
             image = pygame.transform.scale(self.sprite_sheet.get_image(x, 100, 68, 100), (PLAYER_WIDTH, PLAYER_HEIGHT))
             image.set_colorkey(IMG_BGD_COLOR)
             self.image_standing_r.append(image)
@@ -75,20 +76,22 @@ class Player(pygame.sprite.Sprite):
     def animate(self):
         now = pygame.time.get_ticks()
 
-        if now - self.last_updated > 150:
-            self.last_updated = now
-            if self.walking:
-                self.current_frame = (self.current_frame + 1) % (len(self.image_running_l))
-                if self.dir == 'l':
-                    self.image = self.image_running_l[self.current_frame]
-                else:
+        if self.walking:
+            if now - self.last_updated > 75:
+                self.last_updated = now
+                self.current_frame = (self.current_frame + 1) % 6
+                if self.dir == 'r':
                     self.image = self.image_running_r[self.current_frame]
-            else:
-                self.current_frame = (self.current_frame + 1) % (len(self.image_standing_l))
-                if self.dir == 'l':
-                    self.image = self.image_standing_l[self.current_frame]
                 else:
+                    self.image = self.image_running_l[self.current_frame]
+        else:
+            if now - self.last_updated > 75:
+                self.last_updated = now
+                self.current_frame = (self.current_frame + 1) % 2
+                if self.dir == 'r':
                     self.image = self.image_standing_r[self.current_frame]
+                else:
+                    self.image = self.image_standing_l[self.current_frame]
 
     def update(self):
         self.animate()
@@ -137,18 +140,57 @@ class Player(pygame.sprite.Sprite):
 
     def move_left(self):
         self.change_x = -6
-        self.walking = True
         self.dir = 'l'
+        self.walking = True
 
     def move_right(self):
         self.change_x = 6
-        self.walking = True
         self.dir = 'r'
+        self.walking = True
 
     def stop(self):
         self.change_x = 0
         self.walking = False
-        
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, sprite_sheet, mid_x, bottom):
+        pygame.sprite.Sprite.__init__(self)
+        self.sprite_sheet = sprite_sheet
+        self.current_frame = 0
+        self.frames_l = []
+        self.frames_r = []
+        self.last_updated = 0
+        for y in range(240, 336, 48):
+            for x in range(0, 395, 79):
+                image = sprite_sheet.get_image(x, y, 79, 48)
+                self.frames_r.append(image)
+                image = pygame.transform.flip(image, True, False)
+                self.frames_l.append(image)
+        if random.randrange(2) == 0:
+            self.dir = 'l'
+            self.current_frame = random.randrange(len(self.frames_l))
+            self.image = self.frames_l[self.current_frame]
+        else:
+            self.dir = 'r'
+            self.current_frame = random.randrange(len(self.frames_r))
+            self.image = self.frames_r[self.current_frame]
+        self.rect = self.image.get_rect()
+        self.rect.centerx = mid_x
+        self.rect.bottom = bottom
+
+    def update(self):
+        self.animate()
+
+    def animate(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_updated > 175:
+            self.last_update = now
+            self.current_frame = (self.current_frame + 1) % 10
+            if self.dir == 'l':
+                self.image = self.frames_l[self.current_frame]
+            else:
+                self.image = self.frames_r[self.current_frame]
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, sprite_sheet, x, y, ratio):
@@ -160,22 +202,6 @@ class Platform(pygame.sprite.Sprite):
 
     def off_screen(self):
         return self.rect.top >= HEIGHT + 1
-
-
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, sprite_sheet, centerx, bottom):
-        # You need to implement this function
-        # Position of the first enemy sprite:
-        # X = 0, Y = 240, WIDTH = 79, HEIGHT = 48
-        # Email: andrew.blchen@gmail.com
-        pass
-
-    def update(self):
-        self.animate()
-
-    def animate(self):
-        # You need to implement this function
-        pass
 
 
 # [pos_x, pos_y, width multiplier]
@@ -208,10 +234,9 @@ player = Player(sprite_sheet)
 active_sprite.add(player)
 all_sprites.add(player)
 
-# Implement this part of the code
-# enemy = Enemy(None, None, None)
-# active_sprite.add(enemy)
-# all_sprites.add(enemy)
+enemy = Enemy(sprite_sheet, 700, 300)
+active_sprite.add(enemy)
+all_sprites.add(enemy)
 
 def get_top_sprite(platform_group):
     ret = None
@@ -254,6 +279,15 @@ def get_new_platform(near):
         return Platform(sprite_sheet, new_x, new_y, new_ratio)
 
 
+def draw_heart(screen, sprite_sheet, life):
+    img = sprite_sheet.get_image(450, 45, 50, 45)
+    img.set_colorkey(IMG_BGD_COLOR)
+    rect = img.get_rect()
+    for i in range(life):
+        rect.x = i * 50
+        rect.y = 10
+        screen.blit(img, rect)
+
 running = True
 while running:
     clock.tick(FPS)
@@ -283,6 +317,7 @@ while running:
     screen.fill(BLACK)
     platform_sprites.draw(screen)
     active_sprite.draw(screen)
+    draw_heart(screen, sprite_sheet, player.life)
 
     # After drawing everything, flip the display
     pygame.display.flip()
